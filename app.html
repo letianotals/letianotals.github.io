@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leti — Anotações em LS</title>
+  <style>
+    :root{--blue:#245b9e;--blue2:#173f70;--bg:#f3f6fa;--ink:#172536;--muted:#66758a;--line:#dce4ee;--white:#fff;--red:#d83b45}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Arial,sans-serif}
+    header{background:linear-gradient(115deg,var(--blue2),var(--blue));color:#fff;padding:18px max(18px,calc((100% - 1180px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-size:24px;font-weight:800;letter-spacing:.2px}.brand small{display:block;font-size:12px;font-weight:400;opacity:.85;letter-spacing:1px}
+    main{max-width:1180px;margin:22px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px, .9fr);gap:18px}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:16px;box-shadow:0 4px 18px #173f700a}
+    h2{font-size:17px;margin:0 0 12px}h3{font-size:15px;margin:0}
+    .muted{color:var(--muted);font-size:13px}.field{display:flex;gap:8px;margin-bottom:12px}
+    input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;font:inherit;background:#fff;color:var(--ink)}
+    textarea{resize:vertical;min-height:65px}
+    button{border:0;border-radius:9px;padding:10px 14px;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+    button:hover{filter:brightness(.95)}button:disabled{opacity:.5;cursor:not-allowed}
+    button.secondary{background:#eaf0f7;color:var(--blue2)}button.danger{background:#fff0f0;color:#a92730}
+    .player-wrap{position:relative;background:#101820;border-radius:12px;overflow:hidden;aspect-ratio:16/9}
+    #player{width:100%;height:100%}.camera-float{position:absolute;right:12px;bottom:12px;width:25%;min-width:120px;max-width:220px;aspect-ratio:4/3;border:2px solid white;border-radius:10px;overflow:hidden;background:#263444;display:none;box-shadow:0 4px 18px #0008;z-index:5}
+    #cameraPreview{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    .camera-label{position:absolute;left:5px;top:4px;background:#000b;color:#fff;border-radius:4px;padding:4px 7px;font-size:11px;cursor:move;touch-action:none;user-select:none}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.record{background:var(--red)}.recording{background:#8f1720;animation:pulse 1.2s infinite}
+    @keyframes pulse{50%{opacity:.65}}.status{padding:9px 11px;background:#f1f5fa;border-radius:8px;color:var(--muted);font-size:13px;margin:10px 0}
+    .annotation-list{display:flex;flex-direction:column;gap:9px;max-height:600px;overflow:auto}
+    .annotation{border:1px solid var(--line);border-radius:11px;padding:11px;display:grid;grid-template-columns:1fr auto;gap:8px}
+    .annotation small{display:block;color:var(--muted);margin-top:3px}.annotation-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+    .annotation-actions button{padding:7px 9px;font-size:12px}.pill{display:inline-block;border-radius:20px;padding:3px 8px;font-size:11px;background:#edf3fa;color:#355779}
+    .topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+    .hidden{display:none!important}.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:20}
+    .modal-card{background:#fff;width:min(700px,100%);border-radius:14px;padding:16px}.modal iframe{width:100%;height:min(60vh,420px);border:0;border-radius:9px}
+    .search-results{display:grid;gap:7px;margin:8px 0;max-height:240px;overflow:auto}.search-result{display:flex;gap:10px;text-align:left;align-items:center;width:100%;background:#eef3fa;color:#173f70}.search-result img{width:72px;border-radius:5px} .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#182638;color:white;padding:11px 16px;border-radius:9px;z-index:30;max-width:90%;display:none}
+    footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+    @media(max-width:800px){main{grid-template-columns:1fr;margin:14px auto}.camera-float{width:30%;min-width:95px;right:7px;bottom:7px}.panel{padding:13px}header{padding:15px 16px}}
+  [hidden]{display:none!important} .leti-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.leti-grid article{min-width:0;overflow-wrap:anywhere}.leti-grid video{width:100%;border-radius:7px;background:#10243b}
+#leti-wall section{border-top:1px solid #ddd;padding:10px 0}#leti-record-controls{margin:12px 0}
+.leti-meta{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px}.leti-media iframe,.leti-media video{width:100%;aspect-ratio:16/9;border:0}.leti-media{margin:6px 0}
+#leti-yt-meta{padding:8px 0;color:var(--muted)}
+#leti-clip{position:fixed;z-index:40;right:12px;bottom:12px;width:min(340px,calc(100vw - 24px));background:white;box-shadow:0 8px 24px #0005;border-radius:10px;overflow:hidden}
+#leti-clip-grip{display:flex;justify-content:space-between;align-items:center;padding:4px 9px;touch-action:none;cursor:move}
+#leti-clip-host{aspect-ratio:16/9;background:#111}#leti-clip-host iframe{width:100%;height:100%;border:0}
+#leti-clip-status{font-size:12px;padding:4px 8px}
+.leti-thumb{display:grid;place-items:center;width:min(100%,280px);aspect-ratio:16/9;background:#162b43;padding:0;overflow:hidden}
+.leti-thumb>*{grid-area:1/1}.leti-thumb img{width:100%;height:100%;object-fit:contain}.leti-thumb span{z-index:1;background:#0009;border-radius:6px;padding:5px 9px}
+.leti-video-meta{margin:12px 0 6px;padding:8px;background:#f1f5f9;border-radius:8px;overflow-wrap:anywhere;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Leti <small>ANOTAÇÕES EM LÍNGUA DE SINAIS</small></div>
+  <button class="secondary" id="adminButton" onclick="openAdmin()">⚙ Perfil de ADMs</button>
+</header>
+
+<main><section class="panel" style="grid-column:1/-1"><button id="leti-connect" type="button" onclick="connectLeti()">Conectar ao Google</button> <a href="https://script.google.com/macros/s/AKfycbyPqW0p03J00aZidbGwb6C3SARHmwHtG54B6BjVKGFOQZ9xXjkSLBWZqbQQScFkviizOg/exec">Abrir versão anterior</a></section>
+  <section class="panel">
+    <h2>Vídeo de estudo</h2>
+    <div class="field">
+      <input id="youtubeUrl" placeholder="Cole aqui o link do YouTube">
+      <button id="loadVideoBtn" onclick="loadVideo()">Abrir</button>
+    </div>
+    <div class="field">
+      <input id="youtubeSearch" placeholder="Buscar vídeo no YouTube" aria-label="Buscar vídeo">
+      <button class="secondary" onclick="searchYouTube()">Buscar</button>
+    </div>
+    <div id="searchResults" class="search-results hidden"></div>
+    <div class="player-wrap">
+      <div id="player"></div>
+    </div>
+    <div id="leti-yt-meta" hidden>
+      <div><strong>Título:</strong> <span id="leti-yt-title"></span></div>
+      <div><strong>Canal:</strong> <span id="leti-yt-author"></span> · <strong>Ano:</strong> <span id="leti-yt-year"></span></div>
+    </div>
+    <div id="leti-record-controls" hidden>
+      <label>Duração máxima da anotação <select id="leti-duration">
+        <option value="5">5 s</option><option value="10">10 s</option><option value="20">20 s</option><option value="40">40 s</option>
+      </select></label>
+      <label><input id="leti-audio" type="checkbox" style="width:auto"> Incluir microfone</label> <button id="leti-record-note" type="button">Habilitar câmera</button>
+    </div>
+    <div class="status" id="status">Adicione um vídeo do YouTube para começar. Depois, abra a câmera e grave suas anotações em Libras.</div>
+    <p class="muted">A própria gravação em Libras é a anotação. Clique uma vez para iniciar e outra para parar e salvar.</p>
+    <p class="muted">A anotação registra automaticamente o segundo inicial e final do vídeo. Recomendamos gravações curtas para facilitar o envio.</p>
+  </section>
+
+  <aside class="panel">
+    <form id="leti-registration" hidden>
+      <h2>Crie seu perfil no Leti</h2>
+      <label for="leti-display-name">Nome que aparece nas suas publicações</label>
+      <input id="leti-display-name" maxlength="60" minlength="2" required autocomplete="nickname">
+      <button type="submit">Criar perfil</button>
+    </form>
+    <section id="leti-profile" hidden>
+      <h2>Meu perfil · <span id="leti-name"></span></h2>
+      <details open><summary>Minhas anotações</summary><div id="leti-own"></div></details>
+      <h2 id="leti-feed-title">Mural público</h2>
+      <input id="leti-author-filter" type="hidden">
+      <button id="leti-clear-filter" class="secondary" type="button">Ver todos os perfis</button>
+      <div id="leti-wall"></div>
+    </section>
+  </aside>
+</main>
+
+<section id="leti-camera" hidden style="position:fixed;right:12px;bottom:12px;z-index:25;width:min(230px,65vw);padding:8px;background:#142b47;color:white;border-radius:12px;box-shadow:0 4px 18px #0008"><button id="leti-camera-drag" type="button" style="touch-action:none;cursor:move">Arrastar câmera</button> <button type="button" onclick="closeLetiCamera()" aria-label="Fechar câmera">×</button><video id="leti-live" autoplay muted playsinline style="width:100%;aspect-ratio:4/3;object-fit:contain;transform:scaleX(-1)"></video><button id="leti-camera-record" class="record" type="button"></button></section><div id="adminModal" class="modal hidden" onclick="if(event.target.id==='adminModal')closeAdmin()">
+  <div class="modal-card" style="max-width:560px">
+    <div class="topline"><h2>Perfil de ADMs e parceria</h2><button class="secondary" onclick="closeAdmin()">Fechar</button></div>
+    <p id="adminAccount" class="muted">Carregando conta Google...</p>
+    <p id="driveStatus" class="status">Verificando Google Drive...</p>
+    <div id="driveLinks"></div>
+    <label class="muted">E-mail Google da coautora</label>
+    <div class="field"><input id="adminCoauthor" type="email" placeholder="coautora@gmail.com"><button id="saveCoauthor" onclick="saveCoauthor()">Salvar</button></div>
+    <p class="muted">O Google Drive é vinculado pela autorização da conta Google quando você acessa o app. Não é necessário informar senha. Cada conta possui sua própria base privada.</p>
+    <label class="muted">Nome de exibição neste navegador</label>
+    <div class="field"><input id="adminName" placeholder="Seu nome"><button class="secondary" onclick="saveAdminName()">Salvar nome</button></div>
+  </div>
+</div>
+
+<aside id="leti-clip" hidden aria-label="Trecho anterior à anotação">
+  <header id="leti-clip-grip"><span>Antes da anotação</span><button type="button" id="leti-clip-close" aria-label="Fechar trecho">×</button></header>
+  <div id="leti-clip-host"></div><div id="leti-clip-status" role="status"></div>
+</aside>
+<div class="toast" id="toast"></div>
+<footer>Leti — Anotações em LS</footer>
+
+<script>
+let pendingPlayer = null, playerReady = false, savingRecording = false;
+let player, currentVideoId = '', currentVideoTitle = 'Vídeo do YouTube';
+let identity = {};
+const $ = id => document.getElementById(id);
+
+function showToast(message) {
+  $('toast').textContent = message; $('toast').style.display = 'block';
+  clearTimeout(showToast.timer); showToast.timer = setTimeout(() => $('toast').style.display = 'none', 4200);
+}
+function setStatus(message) { $('status').textContent = message; }
+function formatTime(seconds) {
+  seconds = Math.max(0, Math.floor(Number(seconds) || 0));
+  const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+  return (h ? String(h).padStart(2,'0') + ':' : '') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function parseYouTubeId(url) {
+  const patterns = [/youtu\.be\/([a-zA-Z0-9_-]{11})/, /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/, /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/, /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/];
+  for (const p of patterns) { const m = String(url).match(p); if (m) return m[1]; }
+  return '';
+}
+function loadVideo(selectedTitle) {
+  if (!profileState?.registered) return showToast('Crie seu perfil primeiro.');
+  if (savingRecording) return showToast('Finalize o envio da anotação antes de trocar o vídeo.');
+  const url = $('youtubeUrl').value.trim(), id = parseYouTubeId(url);
+  if (!id) return showToast('Cole um link válido do YouTube.');
+  currentVideoId = id; currentVideoTitle = typeof selectedTitle === 'string' ? selectedTitle : 'Vídeo do YouTube';
+  $('leti-yt-meta').hidden = false;
+  $('leti-yt-title').textContent = currentVideoTitle;
+  $('leti-yt-author').textContent = 'Carregando…';
+  $('leti-yt-year').textContent = 'Carregando…';
+  rpc('detalhesYoutubeLeti',id).then(meta => {
+    if (currentVideoId !== id) return;
+    if (meta.title) currentVideoTitle = meta.title;
+    $('leti-yt-title').textContent = currentVideoTitle;
+    $('leti-yt-author').textContent = meta.author || 'Indisponível';
+    $('leti-yt-year').textContent = meta.year || 'Indisponível';
+  }).catch(() => {
+    if (currentVideoId !== id) return;
+    $('leti-yt-author').textContent = 'Indisponível';
+    $('leti-yt-year').textContent = 'Indisponível';
+  });
+  if (player && player.loadVideoById) player.loadVideoById(id);
+  else createPlayer(id);
+  hostedRunner().withSuccessHandler(res => {
+    if (currentVideoId === id && res?.video?.title && currentVideoTitle === 'Vídeo do YouTube') currentVideoTitle = res.video.title;
+    reloadLeti();
+  }).withFailureHandler(err => showToast(err.message || err)).addVideo({url, title: currentVideoTitle, authorName: identity.name || 'Autora'});
+  setStatus('Vídeo carregado. Abra a câmera para registrar uma anotação em Libras.');
+}
+function createPlayer(id, startSeconds = 0) {
+  if (!window.YT || !YT.Player) { pendingPlayer = {id, startSeconds}; setStatus('Carregando o reprodutor do YouTube...'); return; }
+  playerReady = false;
+  player = new YT.Player('player', {
+    videoId: id,
+    playerVars: {playsinline:1, rel:0, start:Math.floor(startSeconds)},
+    events: {onReady: () => { playerReady = true; }, onError: e => setStatus('O YouTube não conseguiu reproduzir este vídeo (código ' + e.data + '). Tente outro vídeo ou abra-o no YouTube.')}
+  });
+}
+function onYouTubeIframeAPIReady() { if (pendingPlayer) { const p = pendingPlayer; pendingPlayer = null; createPlayer(p.id, p.startSeconds); } }
+
+let adminProfile = null;
+function openAdmin(){ $('adminModal').classList.remove('hidden'); loadAdminProfile(); }
+function closeAdmin(){ $('adminModal').classList.add('hidden'); }
+function loadAdminProfile(){
+  hostedRunner().withSuccessHandler(profile=>{
+    adminProfile=profile;
+    $('adminAccount').textContent='Conta Google: '+profile.email+' · '+({PROPRIETARIA:'Proprietária',COAUTORA:'Coautora',USUARIO:'Usuário'}[profile.role]);
+    $('driveStatus').textContent=profile.driveConnected?'✓ Google Drive autorizado e vinculado à sua conta.':'Google Drive ainda não autorizado.';
+    $('adminCoauthor').value=profile.coauthorEmail||'';
+    $('adminCoauthor').disabled=profile.role!=='PROPRIETARIA';
+    $('saveCoauthor').disabled=profile.role!=='PROPRIETARIA';
+    $('driveLinks').innerHTML='';
+    if(profile.spreadsheetUrl) addAdminLink('Abrir planilha-base',profile.spreadsheetUrl);
+    if(profile.driveFolderUrl) addAdminLink('Abrir pasta-base no Drive',profile.driveFolderUrl);
+  }).withFailureHandler(e=>{ $('adminAccount').textContent='Não foi possível validar a conta.'; $('driveStatus').textContent=e.message||String(e); $('saveCoauthor').disabled=true; }).getAdminProfile();
+}
+function addAdminLink(label,url){const a=document.createElement('a');a.textContent=label;a.href=url;a.target='_blank';a.rel='noopener';a.style.marginRight='14px';$('driveLinks').append(a);}
+function saveCoauthor(){
+  hostedRunner().withSuccessHandler(p=>{adminProfile=p;showToast('Coautora cadastrada.');loadAdminProfile();})
+    .withFailureHandler(e=>showToast(e.message||e)).updateCoauthorEmail($('adminCoauthor').value);
+}
+function saveAdminName(){
+  identity.name=$('adminName').value.trim();try { localStorage.setItem('letiName',identity.name); } catch(e) { showToast('O navegador não permite salvar o nome neste dispositivo.'); }
+  showToast('Nome de exibição salvo.');
+}
+function initIdentity(){ let name='Autora'; try { name=localStorage.getItem('letiName')||name; } catch(e) {} identity={name};$('adminName').value=name; }
+function searchYouTube(){
+  const term=$('youtubeSearch').value.trim();if(!term)return showToast('Digite o que deseja buscar.');
+  $('searchResults').classList.remove('hidden');$('searchResults').textContent='Buscando...';
+  hostedRunner().withSuccessHandler(data=>{
+    $('searchResults').innerHTML='';
+    if(!data.configured){
+      const a=document.createElement('a');a.href=data.searchUrl;a.target='_blank';a.rel='noopener';
+      a.textContent='Abrir resultados no YouTube (busca integrada exige chave de API)';$('searchResults').append(a);return;
+    }
+    if(!data.results.length){$('searchResults').textContent='Nenhum vídeo encontrado.';return;}
+    data.results.forEach(v=>{
+      const b=document.createElement('button');b.className='search-result';
+      if(v.thumbnail){const im=document.createElement('img');im.src=v.thumbnail;im.alt='';b.append(im);}
+      const t=document.createElement('span');t.textContent=v.title+' — '+v.channel;b.append(t);
+      b.onclick=()=>{$('youtubeUrl').value='https://www.youtube.com/watch?v='+v.videoId;loadVideo(v.title);$('searchResults').classList.add('hidden');};
+      $('searchResults').append(b);
+    });
+  }).withFailureHandler(e=>{showToast(e.message||e);$('searchResults').classList.add('hidden');}).searchYouTubeVideos(term);
+}
+initIdentity();
+</script>
+<script>
+let connection, sequence = 0;
+const waiting = new Map();
+const endpoint = 'https://script.google.com/macros/s/AKfycbyPqW0p03J00aZidbGwb6C3SARHmwHtG54B6BjVKGFOQZ9xXjkSLBWZqbQQScFkviizOg/exec';
+function connectLeti() {
+  if (connection && !connection.popup.closed) { connection.popup.focus(); return; }
+  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), v => v.toString(16).padStart(2,'0')).join('');
+  const popup = window.open(endpoint + '?letiBridge=' + nonce, '_blank', 'popup,width=520,height=520');
+  if (!popup) return setStatus('Permita a abertura da janela para conectar ao Google.');
+  const session = connection = {popup,nonce};
+  setStatus('Conclua o login na janela do Google e volte ao Leti.');
+  session.watch = setInterval(() => {
+    if (!popup.closed) return;
+    clearInterval(session.watch);
+    connection = null;
+    for (const pending of waiting.values()) pending.reject(new Error('Conecte novamente ao Google.'));
+    $('leti-connect').textContent = 'Conectar ao Google';
+    setStatus('A conexão com o Google foi fechada.');
+  },500);
+}
+addEventListener('message', event => {
+  const {data,source,origin} = event;
+  if (!connection || !source || source.top !== connection.popup || data?.nonce !== connection.nonce) return;
+  if (!/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin)) return;
+  if (data.type === 'leti-bridge-ready' && !connection.peer) {
+    Object.assign(connection,{peer:source,origin});
+    $('leti-connect').textContent = 'Janela da conta Google';
+    setStatus('Conectado ao Google. Abra um vídeo para começar.');
+    reloadLeti();
+  }
+  if (source !== connection.peer || origin !== connection.origin || data.type !== 'leti-response') return;
+  const pending = waiting.get(data.id);
+  if (pending) data.ok ? pending.resolve(data.value) : pending.reject(new Error(data.value));
+});
+function hostedCall(method, ...args) {
+  if (!connection?.peer) return Promise.reject(new Error('Clique em Conectar ao Google primeiro.'));
+  const id = ++sequence;
+  return new Promise((resolve,reject) => {
+    const timer = setTimeout(() => reject(new Error('O Google demorou a responder. Confira suas anotações antes de tentar novamente.')),90000);
+    waiting.set(id,{resolve,reject,timer});
+    connection.peer.postMessage({type:'leti-call',nonce:connection.nonce,id,method,args},connection.origin);
+  }).finally(() => { clearTimeout(waiting.get(id)?.timer); waiting.delete(id); });
+}
+function hostedRunner(success, failure) {
+  return new Proxy({}, {get(_, method) {
+    if (method === 'withSuccessHandler') return handler => hostedRunner(handler,failure);
+    if (method === 'withFailureHandler') return handler => hostedRunner(success,handler);
+    return (...args) => hostedCall(method,...args).then(success,failure);
+  }});
+}
+
+let captureSession = null;
+let profileState = null;
+function rpc(method, ...args) {
+  return new Promise((resolve,reject) => hostedRunner().withSuccessHandler(resolve).withFailureHandler(reject)[method](...args));
+}
+
+async function reloadLeti() {
+  try { renderLeti(await rpc('estadoLeti')); }
+  catch(e) { setStatus(e.message || String(e)); }
+}
+
+function renderLeti(state) {
+  profileState = state;
+  document.querySelector('#leti-registration').hidden = state.registered;
+  document.querySelector('#leti-profile').hidden = !state.registered;
+  document.querySelector('#leti-record-controls').hidden = !state.registered;
+  if (!state.registered) { setStatus('Crie seu perfil para começar a gravar.'); return; }
+  identity = {name:state.name,email:state.user.email};
+  $('leti-name').textContent = state.handle;
+  $('leti-display-name').value = state.name;
+  const wall = $('leti-wall');
+  const own = $('leti-own');
+  wall.replaceChildren();
+  own.replaceChildren();
+  const ownGroups = new Map();
+  const notes = state.annotations.filter(item => item.kind === 'note');
+  const noteIds = new Set(notes.map(item => item.id));
+  for (const item of state.annotations) {
+    if (item.kind === 'comment' && noteIds.has(item.parentId)) continue;
+    const row = ownCardLeti(item);
+    if (item.kind === 'note') {
+      const comment = document.createElement('button');
+      comment.textContent = 'Gravar comentário [até 10″]';
+      comment.onclick = () => abrirCapturaLeti('comment',item);
+      row.append(comment);
+      const children = document.createElement('div');
+      children.className = 'leti-grid';
+      for (const child of state.annotations.filter(a => a.parentId === item.id)) children.append(ownCardLeti(child));
+      row.append(children);
+    }
+    let section = ownGroups.get(item.videoId);
+    if (!section) {
+      section = document.createElement('section');
+      ownGroups.set(item.videoId,section);
+      section.append(cabecalhoVideoLeti(item));
+      own.append(section);
+    }
+    section.append(row);
+  }
+  const groups = new Map();
+  const filter = $('leti-author-filter').value;
+  for (const item of state.published) {
+    if (filter && item.profileId !== filter) continue;
+    if (!groups.has(item.videoId)) groups.set(item.videoId,[]);
+    groups.get(item.videoId).push(item);
+  }
+  for (const entries of groups.values()) {
+    const section = document.createElement('section');
+    const first = entries[0];
+    section.append(cabecalhoVideoLeti(first));
+    const grid = document.createElement('div');
+    grid.className = 'leti-grid';
+    const cards = new Map();
+    for (const item of entries) {
+      const row = document.createElement('article');
+      const profile = document.createElement('button');
+      profile.textContent = item.handle;
+      profile.onclick = () => { $('leti-author-filter').value = item.profileId; $('leti-feed-title').textContent = 'Publicações de ' + item.authorName; renderLeti(state); };
+      row.append(botaoTrechoLeti(item), midiaLeti(item,profile));
+      cards.set(item.id,row);
+    }
+    for (const item of entries.filter(a => a.kind === 'note')) {
+      const note = cards.get(item.id);
+      const comments = document.createElement('div');
+      comments.className = 'leti-grid';
+      for (const child of entries.filter(a => a.parentId === item.id)) comments.append(cards.get(child.id));
+      note.append(comments);
+      section.append(note);
+    }
+    for (const item of entries.filter(a => a.kind === 'comment' && !cards.has(a.parentId))) grid.append(cards.get(item.id));
+    section.append(grid);
+    wall.append(section);
+  }
+  if (!groups.size) wall.textContent = 'Ainda não há gravações publicadas.';
+}
+
+const consultasVideoLeti = new Map();
+function cabecalhoVideoLeti(item) {
+  const header = document.createElement('div');
+  header.className = 'leti-video-meta';
+  const title = letiLink(item.videoTitle || 'Vídeo do YouTube',item.videoUrl);
+  const titleRow = document.createElement('div');
+  titleRow.append('Título: ',title);
+  const info = document.createElement('div');
+  const channel = document.createElement('span');
+  const year = document.createElement('span');
+  channel.textContent = year.textContent = 'Carregando…';
+  info.append('Canal: ',channel,' · Ano: ',year);
+  header.append(titleRow,info);
+  if (!consultasVideoLeti.has(item.videoId)) {
+    consultasVideoLeti.set(item.videoId,rpc('detalhesYoutubeLeti',item.videoId).catch(() => {
+      consultasVideoLeti.delete(item.videoId);
+      return {};
+    }));
+  }
+  consultasVideoLeti.get(item.videoId).then(meta => {
+    if (meta.title) title.textContent = meta.title;
+    channel.textContent = meta.author || 'Indisponível';
+    year.textContent = meta.year || 'Indisponível';
+  });
+  return header;
+}
+
+function ownCardLeti(item) {
+  const row = document.createElement('article');
+  row.append(botaoTrechoLeti(item), midiaLeti(item));
+  const action = document.createElement('button');
+  action.textContent = item.published ? 'Tornar privada' : 'Publicar';
+  action.onclick = async () => {
+    if (!item.published && !confirm('Publicar no mural e permitir acesso pelo link do Drive?')) return;
+    action.disabled = true;
+    try { renderLeti(await rpc('publicarLeti',item.id,!item.published)); }
+    catch(e) { action.disabled = false; showToast(e.message || String(e)); }
+  };
+  const remove = document.createElement('button');
+  remove.textContent = 'Excluir';
+  remove.onclick = async () => {
+    if (!confirm('Excluir esta gravação?')) return;
+    remove.disabled = true;
+    try { await rpc('deleteAnnotation',item.id); await reloadLeti(); }
+    catch(e) { remove.disabled = false; showToast(e.message || String(e)); }
+  };
+  row.append(action,' ',remove);
+  return row;
+}
+
+function midiaLeti(item, author) {
+  const box = document.createElement('div');
+  box.className = 'leti-media';
+  const footer = document.createElement('div');
+  footer.className = 'leti-meta';
+  const count = document.createElement('span');
+  count.textContent = item.views + ' visualizações';
+  footer.append(author || item.handle,count);
+  let counted = false;
+  async function countView() {
+    if (counted) return;
+    counted = true;
+    try { item.views = await rpc('registrarVisualizacaoLeti',item.id); count.textContent = item.views + ' visualizações'; }
+    catch(e) { counted = false; }
+  }
+  if (item.kind === 'comment') {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.onplaying = countView;
+    video.letiId = item.id;
+    box.append(video);
+    previewObserver.observe(video);
+  } else {
+    const play = document.createElement('button');
+    play.className = 'leti-thumb';
+    const label = document.createElement('span');
+    label.textContent = '▶ Assistir anotação';
+    play.append(label);
+    rpc('miniaturaLeti',item.id).then(src => {
+      if (!src || !play.isConnected) return;
+      const image = document.createElement('img');
+      image.alt = '';
+      image.src = src;
+      play.prepend(image);
+    }).catch(()=>{});
+    play.onclick = () => {
+      const frame = document.createElement('iframe');
+      frame.src = item.previewUrl;
+      frame.title = 'Anotação em Libras';
+      frame.allow = 'autoplay';
+      play.replaceWith(frame);
+      countView();
+    };
+    box.append(play);
+  }
+  box.append(footer);
+  return box;
+}
+
+const previewObserver = new IntersectionObserver(entries => {
+  for (const {target,isIntersecting} of entries) {
+    if (!isIntersecting) { target.pause(); continue; }
+    if (target.src) { target.play().catch(()=>{}); continue; }
+    previewObserver.unobserve(target);
+    rpc('carregarComentarioLeti',target.letiId).then(src => {
+      if (target.isConnected) { target.src = src; previewObserver.observe(target); }
+    }).catch(() => { target.hidden = true; });
+  }
+});
+function letiLink(label,href) {
+  const a = document.createElement('a');
+  a.textContent = label;
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  return a;
+}
+let clipPlayer, clipTimer, clipToken = 0;
+function fecharTrechoLeti() {
+  clipToken++;
+  clearInterval(clipTimer);
+  if (clipPlayer) { clipPlayer.destroy(); clipPlayer = null; }
+  $('leti-clip-host').replaceChildren();
+  $('leti-clip').hidden = true;
+}
+
+function botaoTrechoLeti(item) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'secondary';
+  button.textContent = timestampLeti(item.startSeconds);
+  button.title = 'Reproduzir os cinco segundos anteriores';
+  button.onclick = () => abrirTrechoLeti(item);
+  return button;
+}
+
+function abrirTrechoLeti(item) {
+  if (!window.YT?.Player) return showToast('O reprodutor do YouTube ainda está carregando.');
+  fecharTrechoLeti();
+  const end = Math.max(0,Math.floor(item.startSeconds));
+  if (end === 0) return showToast('Esta anotação começa no início do vídeo.');
+  const start = Math.max(0,end - 5);
+  const token = clipToken;
+  if (playerReady && player?.getPlayerState() === 1) player.pauseVideo();
+  const target = document.createElement('div');
+  $('leti-clip-host').append(target);
+  $('leti-clip').hidden = false;
+  $('leti-clip-status').textContent = timestampLeti(start) + ' → ' + timestampLeti(end);
+  clipPlayer = new YT.Player(target,{
+    videoId:item.videoId,
+    playerVars:{playsinline:1,rel:0,start,end},
+    events:{
+      onReady:e => {
+        if (token !== clipToken) return;
+        e.target.mute();
+        e.target.playVideo();
+        clipTimer = setInterval(() => {
+          if (token === clipToken && e.target.getCurrentTime() >= end - 0.04) fecharTrechoLeti();
+        },80);
+      },
+      onStateChange:e => { if (token === clipToken && e.data === YT.PlayerState.ENDED) fecharTrechoLeti(); },
+      onError:() => { if (token === clipToken) $('leti-clip-status').textContent = 'Este vídeo não pode ser reproduzido aqui.'; }
+    }
+  });
+}
+
+$('leti-clip-close').onclick = fecharTrechoLeti;
+const clipGrip = $('leti-clip-grip');
+clipGrip.onpointerdown = event => {
+  if (event.target.closest('button')) return;
+  const box = $('leti-clip');
+  const rect = box.getBoundingClientRect();
+  const dx = event.clientX - rect.left, dy = event.clientY - rect.top;
+  clipGrip.setPointerCapture(event.pointerId);
+  clipGrip.onpointermove = move => {
+    box.style.right = 'auto';
+    box.style.bottom = 'auto';
+    box.style.left = Math.max(0,Math.min(innerWidth - box.offsetWidth,move.clientX - dx)) + 'px';
+    box.style.top = Math.max(0,Math.min(innerHeight - box.offsetHeight,move.clientY - dy)) + 'px';
+  };
+  clipGrip.onlostpointercapture = () => { clipGrip.onpointermove = null; };
+};
+function timestampLeti(time) {
+  const seconds = Math.max(0,Math.floor(Number(time)||0));
+  return Math.floor(seconds/60) + "' " + String(seconds%60).padStart(2,'0') + "''";
+}
+
+
+
+let cameraStream = null;
+let cameraOpening = false;
+let cameraRequest = 0;
+async function abrirCapturaLeti(kind,parent) {
+  if (!profileState?.registered) return showToast('Crie seu perfil primeiro.');
+  if (!parent && (!playerReady || !currentVideoId || !player?.getVideoData()?.video_id)) return showToast('Abra um vídeo do YouTube primeiro.');
+  if (captureSession || savingRecording || cameraOpening) return showToast('Finalize a gravação em andamento.');
+  const request = ++cameraRequest;
+  cameraOpening = true;
+  try {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('A gravação requer um navegador compatível e uma página HTTPS.');
+    cameraStream?.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:$('leti-audio').checked});
+    if (request !== cameraRequest) { stream.getTracks().forEach(track => track.stop()); return; }
+    cameraStream = stream;
+    $('leti-live').srcObject = stream;
+    $('leti-camera').hidden = false;
+    const duration = kind === 'comment' ? 10 : Number($('leti-duration').value);
+    $('leti-camera-record').textContent = kind === 'comment' ? '● Gravar comentário [10″]' : '● Gravar anotação ['+duration+'″]';
+    $('leti-camera-record').onclick = () => gravarLeti({kind,parent,duration});
+    setStatus('Câmera pronta. Clique no botão vermelho para gravar.');
+  } catch (error) {
+    closeLetiCamera();
+    setStatus('Não foi possível abrir a câmera: '+(error.message || error.name));
+  } finally { cameraOpening = false; }
+}
+function closeLetiCamera() {
+  if (captureSession) return;
+  cameraRequest++;
+  cameraStream?.getTracks().forEach(track => track.stop());
+  cameraStream = null;
+  $('leti-live').srcObject = null;
+  $('leti-camera').hidden = true;
+}
+function gravarLeti({kind,parent,duration}) {
+  if (captureSession || savingRecording || !cameraStream) return;
+  if (!connection?.peer) return setStatus('Conecte ao Google antes de gravar.');
+  const videoId = parent?.videoId || currentVideoId;
+  const videoTitle = parent?.videoTitle || currentVideoTitle;
+  if (!videoId || (!parent && !playerReady)) return setStatus('Abra um vídeo primeiro.');
+  try {
+    const mimeType = ['video/mp4','video/webm'].find(type => MediaRecorder.isTypeSupported(type));
+    const recorder = new MediaRecorder(cameraStream,mimeType ? {mimeType,videoBitsPerSecond:1100000} : {videoBitsPerSecond:1100000});
+    const button = $('leti-camera-record'), label = button.textContent, next = button.onclick;
+    const chunks = [], start = performance.now();
+    const startSeconds = parent?.startSeconds ?? player.getCurrentTime();
+    const resume = !!playerReady && player.getPlayerState() === 1;
+    let failed = false, timer;
+    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    recorder.onerror = () => { failed = true; };
+    recorder.onstop = async () => {
+      clearTimeout(timer);
+      captureSession = null;
+      button.textContent = label;
+      button.onclick = next;
+      if (resume) player.playVideo();
+      const blob = new Blob(chunks,{type:recorder.mimeType || chunks[0]?.type});
+      if (failed || !blob.size || blob.size > 12000000) return setStatus('A gravação falhou, ficou vazia ou excedeu o limite.');
+      savingRecording = true;
+      setStatus('Salvando como privada no seu Drive…');
+      try {
+        const dataUrl = await new Promise((resolve,reject) => {
+          const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        await rpc('salvarGravacaoLeti',{videoId,videoTitle,kind,parentId:parent?.id,startSeconds,limit:duration,seconds:Math.min(duration,(performance.now()-start)/1000),dataUrl});
+        setStatus('Gravação privada salva no Drive.');
+        await reloadLeti();
+      } catch (error) { setStatus(error.message || 'Não foi possível salvar.'); }
+      finally { savingRecording = false; }
+    };
+    recorder.start();
+    captureSession = recorder;
+    if (resume) player.pauseVideo();
+    const stop = () => { if (recorder.state === 'recording') recorder.stop(); };
+    timer = setTimeout(stop,duration*1000);
+    button.textContent = '■ Parar e salvar';
+    button.onclick = stop;
+    setStatus('Gravando em Libras…');
+  } catch (error) { setStatus(error.message || 'Não foi possível iniciar a gravação.'); }
+}
+const cameraBox = $('leti-camera'), cameraHandle = $('leti-camera-drag');
+let dragOffset;
+function moveLetiCamera(x,y) {
+  cameraBox.style.right = cameraBox.style.bottom = 'auto';
+  cameraBox.style.left = Math.max(0,Math.min(innerWidth-cameraBox.offsetWidth,x))+'px';
+  cameraBox.style.top = Math.max(0,Math.min(innerHeight-cameraBox.offsetHeight,y))+'px';
+}
+cameraHandle.onpointerdown = event => {
+  const rect = cameraBox.getBoundingClientRect();
+  dragOffset = {x:event.clientX-rect.left,y:event.clientY-rect.top,id:event.pointerId};
+  cameraHandle.setPointerCapture(event.pointerId);
+};
+cameraHandle.onpointermove = event => { if (dragOffset?.id === event.pointerId) moveLetiCamera(event.clientX-dragOffset.x,event.clientY-dragOffset.y); };
+cameraHandle.onlostpointercapture = () => { dragOffset = null; };
+addEventListener('resize',() => { if (!cameraBox.hidden && cameraBox.style.left) { const rect=cameraBox.getBoundingClientRect(); moveLetiCamera(rect.left,rect.top); } });
+addEventListener('pagehide',() => { cameraRequest++; cameraStream?.getTracks().forEach(track => track.stop()); });
+
+$('leti-registration').onsubmit = async e => {
+  e.preventDefault();
+  const button = e.currentTarget.querySelector('button');
+  button.disabled = true;
+  try { renderLeti(await rpc('registrarLeti',$('leti-display-name').value)); setStatus('Perfil pronto. Abra um vídeo para começar.'); }
+  catch(err) { setStatus(err.message || String(err)); }
+  finally { button.disabled = false; }
+};
+$('leti-record-note').onclick = () => abrirCapturaLeti('note');
+$('leti-duration').onchange = () => { $('leti-record-note').textContent = 'Habilitar câmera [' + $('leti-duration').value + ' s]'; };
+$('leti-duration').onchange();
+$('leti-clear-filter').onclick = () => { $('leti-author-filter').value = ''; $('leti-feed-title').textContent = 'Mural público'; if (profileState) renderLeti(profileState); };
+
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
